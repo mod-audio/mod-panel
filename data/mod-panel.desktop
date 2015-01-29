@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=MOD-Panel
+GenericName=MOD Control Panel
+Comment=Control panel to start MOD UI and SDK services
+Exec=mod-panel
+Icon=audio-x-wav
+Terminal=false
+Type=Application
+Categories=AudioVideo;AudioEditing;Qt;
+Version=1.0
