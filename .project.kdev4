@@ -1,0 +1,9 @@
+[Project]
+Manager=KDevGenericManager
+Name=mod-panel
+
+[Filters]
+Excludes=*/.*,*/*~,*/*.pyc,*/ui_*.py,*/__pycache__/
+
+[Project]
+VersionControlSupport=kdevgit
