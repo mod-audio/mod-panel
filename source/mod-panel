@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 # MOD-Panel
@@ -16,4 +16,161 @@
 #
 # For a full copy of the GNU General Public License see the LICENSE file.
 
-### NOTE: Due to mod-sdk not being python3 ready we have to use python2 for now
+# ------------------------------------------------------------------------------------------------------------
+# Imports (Config)
+
+from mod_config import *
+
+# ------------------------------------------------------------------------------------------------------------
+# Imports (Global)
+
+import os
+import sys
+
+if config_UseQt5:
+    from PyQt5.QtCore import Qt, QSettings, QTimer
+    from PyQt5.QtGui import QDesktopServices, QIcon
+    from PyQt5.QtWidgets import QApplication, QMainWindow
+else:
+    from PyQt4.QtCore import Qt, QSettings, QTimer
+    from PyQt4.QtGui import QDesktopServices, QIcon
+    from PyQt4.QtGui import QApplication, QMainWindow
+
+# ------------------------------------------------------------------------------------------------------------
+# Import Signal
+
+from signal import signal, SIGINT, SIGTERM
+
+# ------------------------------------------------------------------------------------------------------------
+# Imports (UI)
+
+from ui_mod_panel import Ui_PanelWindow
+
+# ------------------------------------------------------------------------------------------------------------
+# Signal handler
+
+def signalHandler(sig, frame):
+    if sig not in (SIGINT, SIGTERM):
+        return
+
+    app = QApplication.instance()
+
+    if app is None:
+        return
+
+    QTimer.singleShot(0, app.quit)
+
+def setUpSignals():
+    signal(SIGINT,  signalHandler)
+    signal(SIGTERM, signalHandler)
+
+# ------------------------------------------------------------------------------------------------------------
+# Panel Window
+
+class PanelWindow(QMainWindow):
+    def __init__(self, parent=None):
+        QMainWindow.__init__(self, parent)
+        self.ui = Ui_PanelWindow()
+        self.ui.setupUi(self)
+
+        # ----------------------------------------------------------------------------------------------------
+        # Internal stuff
+
+        #self.fCurrentPedalboard = ""
+        #self.fFirstHostInit     = True
+        #self.fIdleTimerId       = 0
+        #self.fWebFrame          = None
+
+        ## to be filled with key-value pairs of current settings
+        #self.fSavedSettings = {}
+
+        #self.fHostProccess = QProcess(self)
+        #self.fHostProccess.setProcessChannelMode(QProcess.ForwardedChannels)
+
+        #self.fWebServerThread = WebServerThread(self)
+
+        # ----------------------------------------------------------------------------------------------------
+        # Set up GUI
+
+        #self.ui.webview = QWebView(self.ui.swp_webview)
+        #self.ui.webview.setMinimumWidth(980)
+        #self.ui.swp_webview.layout().addWidget(self.ui.webview)
+
+        #self.ui.label_progress.hide()
+        #self.ui.stackedwidget.setCurrentIndex(0)
+
+        # ----------------------------------------------------------------------------------------------------
+        # Load Settings
+
+        self.loadSettings()
+
+        # ----------------------------------------------------------------------------------------------------
+        # Connect actions to functions
+
+        #self.SIGUSR1.connect(self.slot_handleSIGUSR1)
+        #self.SIGTERM.connect(self.slot_handleSIGTERM)
+
+        #self.fWebServerThread.running.connect(self.slot_webServerRunning)
+        #self.fWebServerThread.finished.connect(self.slot_webServerFinished)
+
+        #self.ui.act_file_new.triggered.connect(self.slot_fileNew)
+        #self.ui.act_file_open.triggered.connect(self.slot_fileOpen)
+        #self.ui.act_file_save.triggered.connect(self.slot_fileSave)
+        #self.ui.act_file_save_as.triggered.connect(self.slot_fileSaveAs)
+
+        # ----------------------------------------------------------------------------------------------------
+        # Final setup
+
+        # Dummy timer to keep events active
+        self.startTimer(500)
+
+    # --------------------------------------------------------------------------------------------------------
+    # Settings
+
+    def saveSettings(self):
+        settings = QSettings()
+        settings.setValue("Geometry", self.saveGeometry())
+
+    def loadSettings(self):
+        settings = QSettings()
+        self.restoreGeometry(settings.value("Geometry", ""))
+
+    # --------------------------------------------------------------------------------------------------------
+    # Qt events
+
+    def closeEvent(self, event):
+        self.saveSettings()
+        QMainWindow.closeEvent(self, event)
+
+    def timerEvent(self, event):
+        QMainWindow.timerEvent(self, event)
+
+# ------------------------------------------------------------------------------------------------------------
+# Main
+
+if __name__ == '__main__':
+    # --------------------------------------------------------------------------------------------------------
+    # App initialization
+
+    app = QApplication(sys.argv)
+    app.setApplicationName("MOD-Panel")
+    app.setOrganizationName("MOD")
+    app.setWindowIcon(QIcon(":/48x48/mod.png"))
+
+    # --------------------------------------------------------------------------------------------------------
+    # Set-up custom signal handling
+
+    setUpSignals()
+
+    # --------------------------------------------------------------------------------------------------------
+    # Create and show GUI
+
+    gui = PanelWindow()
+    gui.show()
+
+    # --------------------------------------------------------------------------------------------------------
+    # App-Loop
+
+    sys.exit(app.exec_())
+
+# ------------------------------------------------------------------------------------------------------------
