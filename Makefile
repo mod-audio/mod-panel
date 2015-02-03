@@ -100,16 +100,14 @@ install:
 	install -d $(DESTDIR)$(PREFIX)/share/mod-panel/
 	install -d $(DESTDIR)$(PREFIX)/share/pixmaps/
 
+	# Install desktop file and pixmap
+	install -m 644 data/*.desktop          $(DESTDIR)$(PREFIX)/share/applications/
+	install -m 644 resources/48x48/mod.png $(DESTDIR)$(PREFIX)/share/pixmaps/mod-panel.png
+
 	# Install script files
 	install -m 755 \
 		data/mod-panel \
 		$(DESTDIR)$(PREFIX)/bin/
-
-	# Install desktop files
-	install -m 644 data/*.desktop          $(DESTDIR)$(PREFIX)/share/applications/
-
-	# Install pixmaps
-	install -m 644 resources/48x48/mod.png $(DESTDIR)$(PREFIX)/share/pixmaps/mod-panel.png
 
 	# Install python code
 	install -m 644 \
@@ -125,6 +123,7 @@ install:
 uninstall:
 	rm -f  $(DESTDIR)$(PREFIX)/bin/mod-panel
 	rm -f  $(DESTDIR)$(PREFIX)/share/applications/mod-panel.desktop
+	rm -f  $(DESTDIR)$(PREFIX)/share/pixmaps/mod-panel.png
 	rm -rf $(DESTDIR)$(PREFIX)/share/mod-panel/
 
 # ----------------------------------------------------------------------------------------------------------------------------
