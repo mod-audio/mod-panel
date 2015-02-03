@@ -200,11 +200,11 @@ class PanelWindow(QMainWindow):
 
     @pyqtSlot()
     def slot_uiLaunch(self):
-        QDesktopServices.openUrl(QUrl("http://localhost:8888/"))
+        self.openUrl("http://localhost:8888/")
 
     @pyqtSlot()
     def slot_sdkLaunch(self):
-        QDesktopServices.openUrl(QUrl("http://localhost:9000/"))
+        self.openUrl("http://localhost:9000/")
 
     # --------------------------------------------------------------------------------------------------------
 
@@ -356,6 +356,12 @@ class PanelWindow(QMainWindow):
         if error == QProcess.WriteError:
             return self.tr("Process write error.")
         return self.tr("Unkown error.")
+
+    def openUrl(self, url):
+        if os.path.exists("/usr/bin/chromium-browser"):
+            os.system("/usr/bin/chromium-browser \"%s\" &" % url)
+        else:
+            QDesktopServices.openUrl(QUrl(url))
 
     def stopHostIfNeeded(self):
         if self.fProccessHost.state() != QProcess.Running:
