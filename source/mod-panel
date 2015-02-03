@@ -28,13 +28,13 @@ import os
 import sys
 
 if config_UseQt5:
-    from PyQt5.QtCore import Qt, QSettings, QTimer
+    from PyQt5.QtCore import pyqtSlot, Qt, QProcess, QSettings, QTimer, QUrl
     from PyQt5.QtGui import QDesktopServices, QIcon
-    from PyQt5.QtWidgets import QApplication, QMainWindow
+    from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox
 else:
-    from PyQt4.QtCore import Qt, QSettings, QTimer
+    from PyQt4.QtCore import pyqtSlot,Qt, QProcess, QSettings, QTimer, QUrl
     from PyQt4.QtGui import QDesktopServices, QIcon
-    from PyQt4.QtGui import QApplication, QMainWindow
+    from PyQt4.QtGui import QApplication, QMainWindow, QMessageBox
 
 # ------------------------------------------------------------------------------------------------------------
 # Import Signal
@@ -76,28 +76,45 @@ class PanelWindow(QMainWindow):
         # ----------------------------------------------------------------------------------------------------
         # Internal stuff
 
-        #self.fCurrentPedalboard = ""
-        #self.fFirstHostInit     = True
-        #self.fIdleTimerId       = 0
-        #self.fWebFrame          = None
+        self.fProccessHost = QProcess(self)
+        self.fProccessHost.setProcessChannelMode(QProcess.MergedChannels)
+        self.fStoppingHost = False
 
-        ## to be filled with key-value pairs of current settings
-        #self.fSavedSettings = {}
+        self.fProccessUI = QProcess(self)
+        self.fProccessUI.setProcessChannelMode(QProcess.MergedChannels)
+        self.fStoppingUI = False
 
-        #self.fHostProccess = QProcess(self)
-        #self.fHostProccess.setProcessChannelMode(QProcess.ForwardedChannels)
-
-        #self.fWebServerThread = WebServerThread(self)
+        self.fProccessSDK = QProcess(self)
+        self.fProccessSDK.setProcessChannelMode(QProcess.MergedChannels)
+        self.fStoppingSDK = False
 
         # ----------------------------------------------------------------------------------------------------
-        # Set up GUI
+        # Set up GUI (content)
 
-        #self.ui.webview = QWebView(self.ui.swp_webview)
-        #self.ui.webview.setMinimumWidth(980)
-        #self.ui.swp_webview.layout().addWidget(self.ui.webview)
+        self.ui.l_ui_details.setText(self.tr("""<br/>
+            <b>Web-based interface for the MOD</b>.<br/><br/>
+            This is the UI for the MOD software.<br/>
+            It's a webserver that delivers an HTML5 interface and communicates with the mod-host.<br/>
+        """))
 
-        #self.ui.label_progress.hide()
-        #self.ui.stackedwidget.setCurrentIndex(0)
+        self.ui.l_sdk_details.setText(self.tr("""<br/>
+            <b>SDK to implement the MOD GUI interface</b>.<br/><br/>
+            This SDK's goal is to allow LV2 plugin developers to implement the MOD GUI extension.<br/>
+            In MOD GUI, every plugin has a real pedal like representation in a web based environment,
+            with several plugins in a pedalboard.<br/>
+        """))
+
+        # ----------------------------------------------------------------------------------------------------
+        # Set up GUI (stopped services)
+
+        self.ui.b_ui_stop.setEnabled(False)
+        self.ui.b_sdk_stop.setEnabled(False)
+
+        self.ui.tb_ui.setEnabled(False)
+        self.ui.tb_sdk.setEnabled(False)
+
+        self.ui.l_ui_status.setText(self.tr("Stopped"))
+        self.ui.l_sdk_status.setText(self.tr("Stopped"))
 
         # ----------------------------------------------------------------------------------------------------
         # Load Settings
@@ -107,22 +124,172 @@ class PanelWindow(QMainWindow):
         # ----------------------------------------------------------------------------------------------------
         # Connect actions to functions
 
-        #self.SIGUSR1.connect(self.slot_handleSIGUSR1)
-        #self.SIGTERM.connect(self.slot_handleSIGTERM)
+        self.ui.b_clear_logs.clicked.connect(self.slot_clearLogs)
 
-        #self.fWebServerThread.running.connect(self.slot_webServerRunning)
-        #self.fWebServerThread.finished.connect(self.slot_webServerFinished)
+        self.ui.b_ui_start.clicked.connect(self.slot_uiStart)
+        self.ui.b_sdk_start.clicked.connect(self.slot_sdkStart)
 
-        #self.ui.act_file_new.triggered.connect(self.slot_fileNew)
-        #self.ui.act_file_open.triggered.connect(self.slot_fileOpen)
-        #self.ui.act_file_save.triggered.connect(self.slot_fileSave)
-        #self.ui.act_file_save_as.triggered.connect(self.slot_fileSaveAs)
+        self.ui.b_ui_stop.clicked.connect(self.slot_uiStop)
+        self.ui.b_sdk_stop.clicked.connect(self.slot_sdkStop)
+
+        self.ui.tb_ui.clicked.connect(self.slot_uiLaunch)
+        self.ui.tb_sdk.clicked.connect(self.slot_sdkLaunch)
+
+        self.fProccessHost.error.connect(self.slot_hostStartError)
+        self.fProccessHost.started.connect(self.slot_hostStartSuccess)
+        self.fProccessHost.finished.connect(self.slot_hostFinished)
+
+        self.fProccessUI.error.connect(self.slot_uiStartError)
+        self.fProccessUI.started.connect(self.slot_uiStartSuccess)
+        self.fProccessUI.finished.connect(self.slot_uiFinished)
+
+        self.fProccessSDK.error.connect(self.slot_sdkStartError)
+        self.fProccessSDK.started.connect(self.slot_sdkStartSuccess)
+        self.fProccessSDK.finished.connect(self.slot_sdkFinished)
 
         # ----------------------------------------------------------------------------------------------------
         # Final setup
 
         # Dummy timer to keep events active
         self.startTimer(500)
+
+    # --------------------------------------------------------------------------------------------------------
+    # Log textBrowser
+
+    @pyqtSlot()
+    def slot_clearLogs(self):
+        self.ui.text_host.clear()
+        self.ui.text_ui.clear()
+        self.ui.text_sdk.clear()
+
+    # --------------------------------------------------------------------------------------------------------
+    # UI/SDK
+
+    @pyqtSlot()
+    def slot_uiStart(self):
+        self.ui.text_host.clear()
+        self.ui.text_ui.clear()
+        self.ui.l_ui_status.setText(self.tr("Starting..."))
+        self.fProccessHost.start("mod-host", ["--nofork"])
+
+    @pyqtSlot()
+    def slot_sdkStart(self):
+        self.ui.text_sdk.clear()
+        self.ui.l_sdk_status.setText(self.tr("Starting..."))
+        self.fProccessSDK.start("modsdk")
+
+    # --------------------------------------------------------------------------------------------------------
+
+    @pyqtSlot()
+    def slot_uiStop(self):
+        self.ui.l_ui_status.setText(self.tr("Stopping..."))
+
+        if self.fProccessUI.state() == QProcess.Running:
+            self.fStoppingUI = True
+            self.fProccessUI.terminate()
+
+    @pyqtSlot()
+    def slot_sdkStop(self):
+        self.ui.l_sdk_status.setText(self.tr("Stopping..."))
+
+        if self.fProccessSDK.state() == QProcess.Running:
+            self.fStoppingSDK = True
+            self.fProccessSDK.terminate()
+
+    # --------------------------------------------------------------------------------------------------------
+
+    @pyqtSlot()
+    def slot_uiLaunch(self):
+        QDesktopServices.openUrl(QUrl("http://localhost:8888/"))
+
+    @pyqtSlot()
+    def slot_sdkLaunch(self):
+        QDesktopServices.openUrl(QUrl("http://localhost:9000/"))
+
+    # --------------------------------------------------------------------------------------------------------
+
+    @pyqtSlot(QProcess.ProcessError)
+    def slot_hostStartError(self, error):
+        # crashed while stopping, ignore
+        if error == QProcess.Crashed and self.fStoppingHost:
+            return
+
+        if self.fProccessUI.state() == QProcess.Running:
+            self.fStoppingUI = True
+            self.fProccessUI.terminate()
+
+        errorStr = self.tr("Could not start MOD UI backend.\n") + self.getProcessErrorAsString(error)
+
+        # show the error message
+        QMessageBox.critical(self, self.tr("Error"), errorStr)
+
+    @pyqtSlot(QProcess.ProcessError)
+    def slot_uiStartError(self, error):
+        self.stopHostIfNeeded()
+
+        # crashed while stopping, ignore
+        if error == QProcess.Crashed and self.fStoppingUI:
+            return
+
+        errorStr = self.tr("Could not start MOD UI.\n") + self.getProcessErrorAsString(error)
+
+        # show the error message
+        QMessageBox.critical(self, self.tr("Error"), errorStr)
+
+    @pyqtSlot(QProcess.ProcessError)
+    def slot_sdkStartError(self, error):
+        # crashed while stopping, ignore
+        if error == QProcess.Crashed and self.fStoppingSDK:
+            return
+
+        errorStr = self.tr("Could not start MOD SDK.\n") + self.getProcessErrorAsString(error)
+
+        # show the error message
+        QMessageBox.critical(self, self.tr("Error"), errorStr)
+
+    # --------------------------------------------------------------------------------------------------------
+
+    @pyqtSlot()
+    def slot_hostStartSuccess(self):
+        self.fProccessUI.start("mod-ui")
+
+    @pyqtSlot()
+    def slot_uiStartSuccess(self):
+        self.ui.l_ui_status.setText(self.tr("Running"))
+        self.ui.b_ui_start.setEnabled(False)
+        self.ui.b_ui_stop.setEnabled(True)
+        self.ui.tb_ui.setEnabled(True)
+
+    @pyqtSlot()
+    def slot_sdkStartSuccess(self):
+        self.ui.l_sdk_status.setText(self.tr("Running"))
+        self.ui.b_sdk_start.setEnabled(False)
+        self.ui.b_sdk_stop.setEnabled(True)
+        self.ui.tb_sdk.setEnabled(True)
+
+    # --------------------------------------------------------------------------------------------------------
+
+    @pyqtSlot(int, QProcess.ExitStatus)
+    def slot_hostFinished(self, exitCode, exitStatus):
+        self.fStoppingHost = False
+
+    @pyqtSlot(int, QProcess.ExitStatus)
+    def slot_uiFinished(self, exitCode, exitStatus):
+        self.ui.l_ui_status.setText(self.tr("Stopped"))
+        self.ui.b_ui_start.setEnabled(True)
+        self.ui.b_ui_stop.setEnabled(False)
+        self.ui.tb_ui.setEnabled(False)
+        self.fStoppingUI = False
+
+        self.stopHostIfNeeded()
+
+    @pyqtSlot(int, QProcess.ExitStatus)
+    def slot_sdkFinished(self, exitCode, exitStatus):
+        self.ui.l_sdk_status.setText(self.tr("Stopped"))
+        self.ui.b_sdk_start.setEnabled(True)
+        self.ui.b_sdk_stop.setEnabled(False)
+        self.ui.tb_sdk.setEnabled(False)
+        self.fStoppingSDK = False
 
     # --------------------------------------------------------------------------------------------------------
     # Settings
@@ -140,10 +307,62 @@ class PanelWindow(QMainWindow):
 
     def closeEvent(self, event):
         self.saveSettings()
+
+        if self.fProccessSDK.state() == QProcess.Running:
+            self.fStoppingSDK = True
+            self.fProccessSDK.terminate()
+            if not self.fProccessSDK.waitForFinished(500):
+                self.fProccessSDK.kill()
+
+        if self.fProccessUI.state() == QProcess.Running:
+            self.fStoppingUI = True
+            self.fProccessUI.terminate()
+            if not self.fProccessUI.waitForFinished(500):
+                self.fProccessUI.kill()
+
+        if self.fProccessHost.state() == QProcess.Running:
+            self.fStoppingHost = True
+            self.fProccessHost.terminate()
+            if not self.fProccessHost.waitForFinished(500):
+                self.fProccessHost.kill()
+
         QMainWindow.closeEvent(self, event)
 
     def timerEvent(self, event):
+        #if self.fProccessHost.state() == QProcess.Running:
+        text = str(self.fProccessHost.readAll().trimmed(), encoding="utf-8", errors="ignore")
+        if text: self.ui.text_host.appendPlainText(text)
+
+        #if self.fProccessUI.state() == QProcess.Running:
+        text = str(self.fProccessUI.readAll().trimmed(), encoding="utf-8", errors="ignore")
+        if text: self.ui.text_ui.appendPlainText(text)
+
+        #if self.fProccessSDK.state() == QProcess.Running:
+        text = str(self.fProccessSDK.readAll().trimmed(), encoding="utf-8", errors="ignore")
+        if text: self.ui.text_sdk.appendPlainText(text)
+
         QMainWindow.timerEvent(self, event)
+
+    # --------------------------------------------------------------------------------------------------------
+    # Internal stuff
+
+    def getProcessErrorAsString(self, error):
+        if error == QProcess.FailedToStart:
+            return self.tr("Process failed to start.")
+        if error == QProcess.Crashed:
+            return self.tr("Process crashed.")
+        if error == QProcess.Timedout:
+            return self.tr("Process timed out.")
+        if error == QProcess.WriteError:
+            return self.tr("Process write error.")
+        return self.tr("Unkown error.")
+
+    def stopHostIfNeeded(self):
+        if self.fProccessHost.state() != QProcess.Running:
+            return
+
+        self.fStoppingHost = True
+        self.fProccessHost.terminate()
 
 # ------------------------------------------------------------------------------------------------------------
 # Main
@@ -151,6 +370,8 @@ class PanelWindow(QMainWindow):
 if __name__ == '__main__':
     # --------------------------------------------------------------------------------------------------------
     # App initialization
+
+    #import resources_rc
 
     app = QApplication(sys.argv)
     app.setApplicationName("MOD-Panel")
