@@ -98,6 +98,7 @@ install:
 	install -d $(DESTDIR)$(PREFIX)/bin/
 	install -d $(DESTDIR)$(PREFIX)/share/applications/
 	install -d $(DESTDIR)$(PREFIX)/share/mod-panel/
+	install -d $(DESTDIR)$(PREFIX)/share/pixmaps/
 
 	# Install script files
 	install -m 755 \
@@ -105,7 +106,10 @@ install:
 		$(DESTDIR)$(PREFIX)/bin/
 
 	# Install desktop files
-	install -m 644 data/*.desktop $(DESTDIR)$(PREFIX)/share/applications/
+	install -m 644 data/*.desktop          $(DESTDIR)$(PREFIX)/share/applications/
+
+	# Install pixmaps
+	install -m 644 resources/48x48/mod.png $(DESTDIR)$(PREFIX)/share/pixmaps/mod-panel.png
 
 	# Install python code
 	install -m 644 \
@@ -114,8 +118,7 @@ install:
 		$(DESTDIR)$(PREFIX)/share/mod-panel/
 
 	# Adjust PREFIX value in script files
-	sed -i "s?X-PREFIX-X?$(PREFIX)?" \
-		$(DESTDIR)$(PREFIX)/bin/mod-panel
+	sed -i "s?X-PREFIX-X?$(PREFIX)?" $(DESTDIR)$(PREFIX)/bin/mod-panel
 
 # ----------------------------------------------------------------------------------------------------------------------------
 
