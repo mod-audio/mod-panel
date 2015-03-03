@@ -120,7 +120,7 @@
       <property name="currentIndex">
        <number>0</number>
       </property>
-      <widget class="QWidget" name="tab_logs_host">
+      <widget class="QWidget" name="tab_logs_backend">
        <attribute name="title">
         <string>MOD Host</string>
        </attribute>
@@ -132,7 +132,7 @@
          <number>0</number>
         </property>
         <item>
-         <widget class="QPlainTextEdit" name="text_host">
+         <widget class="QPlainTextEdit" name="text_backend">
           <property name="undoRedoEnabled">
            <bool>false</bool>
           </property>

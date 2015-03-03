@@ -76,9 +76,9 @@ class PanelWindow(QMainWindow):
         # ----------------------------------------------------------------------------------------------------
         # Internal stuff
 
-        self.fProccessHost = QProcess(self)
-        self.fProccessHost.setProcessChannelMode(QProcess.MergedChannels)
-        self.fStoppingHost = False
+        self.fProccessBackend = QProcess(self)
+        self.fProccessBackend.setProcessChannelMode(QProcess.MergedChannels)
+        self.fStoppingBackend = False
 
         self.fProccessUI = QProcess(self)
         self.fProccessUI.setProcessChannelMode(QProcess.MergedChannels)
@@ -94,7 +94,7 @@ class PanelWindow(QMainWindow):
         self.ui.l_ui_details.setText(self.tr("""<br/>
             <b>Web-based interface for the MOD</b>.<br/><br/>
             This is the UI for the MOD software.<br/>
-            It's a webserver that delivers an HTML5 interface and communicates with the mod-host.<br/>
+            It's a webserver that delivers an HTML5 interface and communicates with the mod backend.<br/>
         """))
 
         self.ui.l_sdk_details.setText(self.tr("""<br/>
@@ -135,9 +135,9 @@ class PanelWindow(QMainWindow):
         self.ui.tb_ui.clicked.connect(self.slot_uiLaunch)
         self.ui.tb_sdk.clicked.connect(self.slot_sdkLaunch)
 
-        self.fProccessHost.error.connect(self.slot_hostStartError)
-        self.fProccessHost.started.connect(self.slot_hostStartSuccess)
-        self.fProccessHost.finished.connect(self.slot_hostFinished)
+        self.fProccessBackend.error.connect(self.slot_backendStartError)
+        self.fProccessBackend.started.connect(self.slot_backendStartSuccess)
+        self.fProccessBackend.finished.connect(self.slot_backendFinished)
 
         self.fProccessUI.error.connect(self.slot_uiStartError)
         self.fProccessUI.started.connect(self.slot_uiStartSuccess)
@@ -158,7 +158,7 @@ class PanelWindow(QMainWindow):
 
     @pyqtSlot()
     def slot_clearLogs(self):
-        self.ui.text_host.clear()
+        self.ui.text_backend.clear()
         self.ui.text_ui.clear()
         self.ui.text_sdk.clear()
 
@@ -167,10 +167,10 @@ class PanelWindow(QMainWindow):
 
     @pyqtSlot()
     def slot_uiStart(self):
-        self.ui.text_host.clear()
+        self.ui.text_backend.clear()
         self.ui.text_ui.clear()
         self.ui.l_ui_status.setText(self.tr("Starting..."))
-        self.fProccessHost.start("mod-host", ["--nofork"])
+        self.fProccessBackend.start("ingen", ["-e"])
 
     @pyqtSlot()
     def slot_sdkStart(self):
@@ -209,9 +209,9 @@ class PanelWindow(QMainWindow):
     # --------------------------------------------------------------------------------------------------------
 
     @pyqtSlot(QProcess.ProcessError)
-    def slot_hostStartError(self, error):
+    def slot_backendStartError(self, error):
         # crashed while stopping, ignore
-        if error == QProcess.Crashed and self.fStoppingHost:
+        if error == QProcess.Crashed and self.fStoppingBackend:
             return
 
         if self.fProccessUI.state() == QProcess.Running:
@@ -225,7 +225,7 @@ class PanelWindow(QMainWindow):
 
     @pyqtSlot(QProcess.ProcessError)
     def slot_uiStartError(self, error):
-        self.stopHostIfNeeded()
+        self.stopBackendIfNeeded()
 
         # crashed while stopping, ignore
         if error == QProcess.Crashed and self.fStoppingUI:
@@ -250,7 +250,7 @@ class PanelWindow(QMainWindow):
     # --------------------------------------------------------------------------------------------------------
 
     @pyqtSlot()
-    def slot_hostStartSuccess(self):
+    def slot_backendStartSuccess(self):
         self.fProccessUI.start("mod-ui")
 
     @pyqtSlot()
@@ -270,8 +270,8 @@ class PanelWindow(QMainWindow):
     # --------------------------------------------------------------------------------------------------------
 
     @pyqtSlot(int, QProcess.ExitStatus)
-    def slot_hostFinished(self, exitCode, exitStatus):
-        self.fStoppingHost = False
+    def slot_backendFinished(self, exitCode, exitStatus):
+        self.fStoppingBackend = False
 
     @pyqtSlot(int, QProcess.ExitStatus)
     def slot_uiFinished(self, exitCode, exitStatus):
@@ -281,7 +281,7 @@ class PanelWindow(QMainWindow):
         self.ui.tb_ui.setEnabled(False)
         self.fStoppingUI = False
 
-        self.stopHostIfNeeded()
+        self.stopBackendIfNeeded()
 
     @pyqtSlot(int, QProcess.ExitStatus)
     def slot_sdkFinished(self, exitCode, exitStatus):
@@ -320,18 +320,18 @@ class PanelWindow(QMainWindow):
             if not self.fProccessUI.waitForFinished(500):
                 self.fProccessUI.kill()
 
-        if self.fProccessHost.state() == QProcess.Running:
-            self.fStoppingHost = True
-            self.fProccessHost.terminate()
-            if not self.fProccessHost.waitForFinished(500):
-                self.fProccessHost.kill()
+        if self.fProccessBackend.state() == QProcess.Running:
+            self.fStoppingBackend = True
+            self.fProccessBackend.terminate()
+            if not self.fProccessBackend.waitForFinished(500):
+                self.fProccessBackend.kill()
 
         QMainWindow.closeEvent(self, event)
 
     def timerEvent(self, event):
-        #if self.fProccessHost.state() == QProcess.Running:
-        text = str(self.fProccessHost.readAll().trimmed(), encoding="utf-8", errors="ignore")
-        if text: self.ui.text_host.appendPlainText(text)
+        #if self.fProccessBackend.state() == QProcess.Running:
+        text = str(self.fProccessBackend.readAll().trimmed(), encoding="utf-8", errors="ignore")
+        if text: self.ui.text_backend.appendPlainText(text)
 
         #if self.fProccessUI.state() == QProcess.Running:
         text = str(self.fProccessUI.readAll().trimmed(), encoding="utf-8", errors="ignore")
@@ -363,12 +363,12 @@ class PanelWindow(QMainWindow):
         else:
             QDesktopServices.openUrl(QUrl(url))
 
-    def stopHostIfNeeded(self):
-        if self.fProccessHost.state() != QProcess.Running:
+    def stopBackendIfNeeded(self):
+        if self.fProccessBackend.state() != QProcess.Running:
             return
 
-        self.fStoppingHost = True
-        self.fProccessHost.terminate()
+        self.fStoppingBackend = True
+        self.fProccessBackend.terminate()
 
 # ------------------------------------------------------------------------------------------------------------
 # Main
