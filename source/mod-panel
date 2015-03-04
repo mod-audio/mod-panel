@@ -47,6 +47,15 @@ from signal import signal, SIGINT, SIGTERM
 from ui_mod_panel import Ui_PanelWindow
 
 # ------------------------------------------------------------------------------------------------------------
+# Check if using Ubuntu
+
+if "linux" in sys.platform:
+    from platform import linux_distribution
+    kIsUbuntu = "buntu" in linux_distribution(full_distribution_name=False)[0].lower()
+else:
+    kIsUbuntu = False
+
+# ------------------------------------------------------------------------------------------------------------
 # Signal handler
 
 def signalHandler(sig, frame):
@@ -360,6 +369,8 @@ class PanelWindow(QMainWindow):
     def openUrl(self, url):
         if os.path.exists("/usr/bin/chromium-browser"):
             os.system("/usr/bin/chromium-browser \"%s\" &" % url)
+        elif os.path.exists("/usr/bin/chromium") and not kIsUbuntu:
+            os.system("/usr/bin/chromium \"%s\" &" % url)
         else:
             QDesktopServices.openUrl(QUrl(url))
 
@@ -376,8 +387,6 @@ class PanelWindow(QMainWindow):
 if __name__ == '__main__':
     # --------------------------------------------------------------------------------------------------------
     # App initialization
-
-    #import resources_rc
 
     app = QApplication(sys.argv)
     app.setApplicationName("MOD-Panel")

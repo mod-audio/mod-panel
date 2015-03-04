@@ -122,7 +122,7 @@
       </property>
       <widget class="QWidget" name="tab_logs_backend">
        <attribute name="title">
-        <string>MOD Host</string>
+        <string>MOD UI (Backend)</string>
        </attribute>
        <layout class="QHBoxLayout" name="horizontalLayout_4">
         <property name="spacing">
@@ -151,7 +151,7 @@
       </widget>
       <widget class="QWidget" name="tab_logs_ui">
        <attribute name="title">
-        <string>MOD UI</string>
+        <string>MOD UI (Server)</string>
        </attribute>
        <layout class="QHBoxLayout" name="horizontalLayout_2">
         <property name="spacing">
