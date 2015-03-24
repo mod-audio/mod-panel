@@ -159,8 +159,7 @@ class PanelWindow(QMainWindow):
         # ----------------------------------------------------------------------------------------------------
         # Final setup
 
-        # Dummy timer to keep events active
-        self.startTimer(500)
+        self.fTimerId = self.startTimer(500)
 
     # --------------------------------------------------------------------------------------------------------
     # Log textBrowser
@@ -179,12 +178,22 @@ class PanelWindow(QMainWindow):
         self.ui.text_backend.clear()
         self.ui.text_ui.clear()
         self.ui.l_ui_status.setText(self.tr("Starting..."))
+
+        if self.fProccessUI.state() != QProcess.NotRunning:
+            print("slot_uiStart ignored")
+            return
+
         self.fProccessBackend.start("ingen", ["-e", "-n", "mod-ui"])
 
     @pyqtSlot()
     def slot_sdkStart(self):
         self.ui.text_sdk.clear()
         self.ui.l_sdk_status.setText(self.tr("Starting..."))
+
+        if self.fProccessSDK.state() != QProcess.NotRunning:
+            print("slot_sdkStart ignored")
+            return
+
         self.fProccessSDK.start("modsdk")
 
     # --------------------------------------------------------------------------------------------------------
@@ -194,6 +203,7 @@ class PanelWindow(QMainWindow):
         self.ui.l_ui_status.setText(self.tr("Stopping..."))
 
         if self.fProccessUI.state() == QProcess.NotRunning:
+            print("slot_uiStop ignored")
             return
 
         self.fStoppingUI = True
@@ -204,6 +214,7 @@ class PanelWindow(QMainWindow):
         self.ui.l_sdk_status.setText(self.tr("Stopping..."))
 
         if self.fProccessSDK.state() == QProcess.NotRunning:
+            print("slot_sdkStop ignored")
             return
 
         self.fStoppingSDK = True
@@ -286,23 +297,25 @@ class PanelWindow(QMainWindow):
     def slot_backendFinished(self, exitCode, exitStatus):
         self.fStoppingBackend = False
 
+        self.stopUIIfNeeded()
+
     @pyqtSlot(int, QProcess.ExitStatus)
     def slot_uiFinished(self, exitCode, exitStatus):
+        self.fStoppingUI = False
         self.ui.l_ui_status.setText(self.tr("Stopped"))
         self.ui.b_ui_start.setEnabled(True)
         self.ui.b_ui_stop.setEnabled(False)
         self.ui.tb_ui.setEnabled(False)
-        self.fStoppingUI = False
 
         self.stopBackendIfNeeded()
 
     @pyqtSlot(int, QProcess.ExitStatus)
     def slot_sdkFinished(self, exitCode, exitStatus):
+        self.fStoppingSDK = False
         self.ui.l_sdk_status.setText(self.tr("Stopped"))
         self.ui.b_sdk_start.setEnabled(True)
         self.ui.b_sdk_stop.setEnabled(False)
         self.ui.tb_sdk.setEnabled(False)
-        self.fStoppingSDK = False
 
     # --------------------------------------------------------------------------------------------------------
     # Settings
@@ -321,19 +334,19 @@ class PanelWindow(QMainWindow):
     def closeEvent(self, event):
         self.saveSettings()
 
-        if self.fProccessSDK.state() == QProcess.Running:
+        if self.fProccessSDK.state() != QProcess.NotRunning:
             self.fStoppingSDK = True
             self.fProccessSDK.terminate()
             if not self.fProccessSDK.waitForFinished(500):
                 self.fProccessSDK.kill()
 
-        if self.fProccessUI.state() == QProcess.Running:
+        if self.fProccessUI.state() != QProcess.NotRunning:
             self.fStoppingUI = True
             self.fProccessUI.terminate()
             if not self.fProccessUI.waitForFinished(500):
                 self.fProccessUI.kill()
 
-        if self.fProccessBackend.state() == QProcess.Running:
+        if self.fProccessBackend.state() != QProcess.NotRunning:
             self.fStoppingBackend = True
             self.fProccessBackend.terminate()
             if not self.fProccessBackend.waitForFinished(500):
@@ -342,17 +355,18 @@ class PanelWindow(QMainWindow):
         QMainWindow.closeEvent(self, event)
 
     def timerEvent(self, event):
-        #if self.fProccessBackend.state() == QProcess.Running:
-        text = str(self.fProccessBackend.readAll().trimmed(), encoding="utf-8", errors="ignore")
-        if text: self.ui.text_backend.appendPlainText(text)
+        if event.timerId() == self.fTimerId:
+            text = str(self.fProccessBackend.readAll().replace("\x1b[0m","")
+                                                      .replace("\x1b[0;31m","")
+                                                      .replace("\x1b[0;33m","")
+                                                      .trimmed(), encoding="utf-8", errors="ignore")
+            if text: self.ui.text_backend.appendPlainText(text)
 
-        #if self.fProccessUI.state() == QProcess.Running:
-        text = str(self.fProccessUI.readAll().trimmed(), encoding="utf-8", errors="ignore")
-        if text: self.ui.text_ui.appendPlainText(text)
+            text = str(self.fProccessUI.readAll().trimmed(), encoding="utf-8", errors="ignore")
+            if text: self.ui.text_ui.appendPlainText(text)
 
-        #if self.fProccessSDK.state() == QProcess.Running:
-        text = str(self.fProccessSDK.readAll().trimmed(), encoding="utf-8", errors="ignore")
-        if text: self.ui.text_sdk.appendPlainText(text)
+            text = str(self.fProccessSDK.readAll().trimmed(), encoding="utf-8", errors="ignore")
+            if text: self.ui.text_sdk.appendPlainText(text)
 
         QMainWindow.timerEvent(self, event)
 
@@ -379,11 +393,25 @@ class PanelWindow(QMainWindow):
             QDesktopServices.openUrl(QUrl(url))
 
     def stopBackendIfNeeded(self):
-        if self.fProccessBackend.state() != QProcess.Running:
+        if self.fProccessBackend.state() == QProcess.NotRunning:
             return
 
         self.fStoppingBackend = True
         self.fProccessBackend.terminate()
+
+    def stopUIIfNeeded(self):
+        if self.fProccessUI.state() == QProcess.NotRunning:
+            return
+
+        self.fStoppingUI = True
+        self.fProccessUI.terminate()
+
+    def stopSDKIfNeeded(self):
+        if self.fProccessSDK.state() == QProcess.NotRunning:
+            return
+
+        self.fStoppingSDK = True
+        self.fProccessSDK.terminate()
 
 # ------------------------------------------------------------------------------------------------------------
 # Main
