@@ -176,26 +176,28 @@ class PanelWindow(QMainWindow):
 
     @pyqtSlot()
     def slot_uiStart(self):
+        if self.fProccessBackend.state() != QProcess.NotRunning:
+            print("slot_uiStart ignored")
+            return
+
         self.ui.text_backend.clear()
         self.ui.text_ui.clear()
         self.ui.l_ui_status.setText(self.tr("Starting..."))
         self.ui.b_ui_start.setEnabled(False)
-
-        if self.fProccessUI.state() != QProcess.NotRunning:
-            print("slot_uiStart ignored")
-            return
+        self.ui.b_ui_stop.setEnabled(True)
 
         self.fProccessBackend.start("ingen", ["-e", "-n", "mod-ui"])
 
     @pyqtSlot()
     def slot_sdkStart(self):
-        self.ui.text_sdk.clear()
-        self.ui.l_sdk_status.setText(self.tr("Starting..."))
-        self.ui.b_sdk_start.setEnabled(False)
-
         if self.fProccessSDK.state() != QProcess.NotRunning:
             print("slot_sdkStart ignored")
             return
+
+        self.ui.text_sdk.clear()
+        self.ui.l_sdk_status.setText(self.tr("Starting..."))
+        self.ui.b_sdk_start.setEnabled(False)
+        self.ui.b_sdk_stop.setEnabled(True)
 
         self.fProccessSDK.start("modsdk")
 
@@ -203,24 +205,25 @@ class PanelWindow(QMainWindow):
 
     @pyqtSlot()
     def slot_uiStop(self):
-        self.ui.l_ui_status.setText(self.tr("Stopping..."))
-        self.ui.b_ui_stop.setEnabled(False)
-
         if self.fProccessUI.state() == QProcess.NotRunning:
             print("slot_uiStop ignored")
+            self.stopBackendIfNeeded()
             return
+
+        self.ui.l_ui_status.setText(self.tr("Stopping..."))
+        self.ui.b_ui_stop.setEnabled(False)
 
         self.fStoppingUI = True
         self.fProccessUI.terminate()
 
     @pyqtSlot()
     def slot_sdkStop(self):
-        self.ui.l_sdk_status.setText(self.tr("Stopping..."))
-        self.ui.b_sdk_stop.setEnabled(False)
-
         if self.fProccessSDK.state() == QProcess.NotRunning:
             print("slot_sdkStop ignored")
             return
+
+        self.ui.l_sdk_status.setText(self.tr("Stopping..."))
+        self.ui.b_sdk_stop.setEnabled(False)
 
         self.fStoppingSDK = True
         self.fProccessSDK.terminate()
@@ -305,15 +308,16 @@ class PanelWindow(QMainWindow):
         self.fListeningBackend = False
         self.fStoppingBackend  = False
 
+        self.ui.l_ui_status.setText(self.tr("Stopped"))
+        self.ui.b_ui_start.setEnabled(True)
+        self.ui.b_ui_stop.setEnabled(False)
+        self.ui.tb_ui.setEnabled(False)
+
         self.stopUIIfNeeded()
 
     @pyqtSlot(int, QProcess.ExitStatus)
     def slot_uiFinished(self, exitCode, exitStatus):
         self.fStoppingUI = False
-        self.ui.l_ui_status.setText(self.tr("Stopped"))
-        self.ui.b_ui_start.setEnabled(True)
-        self.ui.b_ui_stop.setEnabled(False)
-        self.ui.tb_ui.setEnabled(False)
 
         self.stopBackendIfNeeded()
 
