@@ -194,6 +194,11 @@ class PanelWindow(QMainWindow):
             print("slot_sdkStart ignored")
             return
 
+        workspacedir = os.path.expanduser("~/mod-workspace")
+
+        if not os.path.exists(workspacedir):
+            os.mkdir(workspacedir)
+
         self.ui.text_sdk.clear()
         self.ui.l_sdk_status.setText(self.tr("Starting..."))
         self.ui.b_sdk_start.setEnabled(False)
