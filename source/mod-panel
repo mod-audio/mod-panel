@@ -87,8 +87,7 @@ class PanelWindow(QMainWindow):
 
         self.fProccessBackend = QProcess(self)
         self.fProccessBackend.setProcessChannelMode(QProcess.MergedChannels)
-        self.fListeningBackend = False
-        self.fStoppingBackend  = False
+        self.fStoppingBackend = False
 
         self.fProccessUI = QProcess(self)
         self.fProccessUI.setProcessChannelMode(QProcess.MergedChannels)
@@ -186,7 +185,7 @@ class PanelWindow(QMainWindow):
         self.ui.b_ui_start.setEnabled(False)
         self.ui.b_ui_stop.setEnabled(True)
 
-        self.fProccessBackend.start("ingen", ["-e", "-n", "mod-ui"])
+        self.fProccessBackend.start("mod-host", ["-n"])
 
     @pyqtSlot()
     def slot_sdkStart(self):
@@ -290,7 +289,8 @@ class PanelWindow(QMainWindow):
 
     @pyqtSlot()
     def slot_backendStartSuccess(self):
-        self.fListeningBackend = True
+        self.ui.l_ui_status.setText(self.tr("Starting (2)"))
+        self.fProccessUI.start("mod-ui")
 
     @pyqtSlot()
     def slot_uiStartSuccess(self):
@@ -310,8 +310,7 @@ class PanelWindow(QMainWindow):
 
     @pyqtSlot(int, QProcess.ExitStatus)
     def slot_backendFinished(self, exitCode, exitStatus):
-        self.fListeningBackend = False
-        self.fStoppingBackend  = False
+        self.fStoppingBackend = False
 
         self.ui.l_ui_status.setText(self.tr("Stopped"))
         self.ui.b_ui_start.setEnabled(True)
@@ -364,8 +363,7 @@ class PanelWindow(QMainWindow):
                 self.fProccessUI.kill()
 
         if self.fProccessBackend.state() != QProcess.NotRunning:
-            self.fListeningBackend = False
-            self.fStoppingBackend  = True
+            self.fStoppingBackend = True
             self.fProccessBackend.terminate()
             if not self.fProccessBackend.waitForFinished(500):
                 self.fProccessBackend.kill()
@@ -374,21 +372,8 @@ class PanelWindow(QMainWindow):
 
     def timerEvent(self, event):
         if event.timerId() == self.fTimerId:
-            text = str(self.fProccessBackend.readAll().replace("\x1b[0m","")
-                                                      .replace("\x1b[0;31m","")
-                                                      .replace("\x1b[0;33m","")
-                                                      .trimmed(), encoding="utf-8", errors="ignore")
-            if text:
-                self.ui.text_backend.appendPlainText(text)
-
-                if self.fListeningBackend:
-                    for line in text.split("\n"):
-                        if "Listening on socket " in line:
-                            # wait a bit for ingen to initialize
-                            QTimer.singleShot(1000, self.slot_ingenStarted)
-                        elif "Failed to create UNIX socket" in line or "Could not activate Jack client" in line:
-                            # need to wait for ingen to create sockets so it can delete them on termination
-                            QTimer.singleShot(1000, self.slot_ingenStartError)
+            text = str(self.fProccessBackend.readAll().trimmed(), encoding="utf-8", errors="ignore")
+            if text: self.ui.text_backend.appendPlainText(text)
 
             text = str(self.fProccessUI.readAll().trimmed(), encoding="utf-8", errors="ignore")
             if text: self.ui.text_ui.appendPlainText(text)
@@ -397,20 +382,6 @@ class PanelWindow(QMainWindow):
             if text: self.ui.text_sdk.appendPlainText(text)
 
         QMainWindow.timerEvent(self, event)
-
-    @pyqtSlot()
-    def slot_ingenStarted(self):
-        if self.fProccessBackend.state() == QProcess.NotRunning:
-            return
-
-        if self.fProccessUI.state() != QProcess.NotRunning:
-            print("ERROR: UI was not stopped")
-
-        self.fProccessUI.start("mod-ui")
-
-    @pyqtSlot()
-    def slot_ingenStartError(self):
-        self.slot_uiFinished(-1, -1)
 
     # --------------------------------------------------------------------------------------------------------
     # Internal stuff
@@ -438,8 +409,7 @@ class PanelWindow(QMainWindow):
         if self.fProccessBackend.state() == QProcess.NotRunning:
             return
 
-        self.fListeningBackend = False
-        self.fStoppingBackend  = True
+        self.fStoppingBackend = True
         self.fProccessBackend.terminate()
 
     def stopUIIfNeeded(self):
