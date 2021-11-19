@@ -1,0 +1,9 @@
+[submodule "source/mod-host"]
+	path = source/mod-host
+	url = git@github.com:moddevices/mod-host.git
+[submodule "source/mod-ui"]
+	path = source/mod-ui
+	url = git@github.com:moddevices/mod-ui.git
+[submodule "source/mod-sdk"]
+	path = source/mod-sdk
+	url = git@github.com:moddevices/mod-sdk.git

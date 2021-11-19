@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # MOD-Panel
-# Copyright (C) 2014-2015 Filipe Coelho <falktx@falktx.com>
+# Copyright (C) 2014-2021 Filipe Coelho <falktx@falktx.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -45,15 +45,6 @@ from signal import signal, SIGINT, SIGTERM
 # Imports (UI)
 
 from ui_mod_panel import Ui_PanelWindow
-
-# ------------------------------------------------------------------------------------------------------------
-# Check if using Ubuntu
-
-if "linux" in sys.platform:
-    from platform import linux_distribution
-    kIsUbuntu = "buntu" in linux_distribution(full_distribution_name=False)[0].lower()
-else:
-    kIsUbuntu = False
 
 # ------------------------------------------------------------------------------------------------------------
 # Signal handler
@@ -101,7 +92,7 @@ class PanelWindow(QMainWindow):
         # Set up GUI (content)
 
         self.ui.l_ui_details.setText(self.tr("""<br/>
-            <b>Web-based interface for the MOD</b>.<br/><br/>
+            <b>Audio host backend and Web-server for MOD</b>.<br/><br/>
             This is the UI for the MOD software.<br/>
             It's a webserver that delivers an HTML5 interface and communicates with the mod backend.<br/>
         """))
@@ -185,7 +176,8 @@ class PanelWindow(QMainWindow):
         self.ui.b_ui_start.setEnabled(False)
         self.ui.b_ui_stop.setEnabled(True)
 
-        self.fProccessBackend.start("mod-host", ["-n"])
+        print(self.localPathToFile("mod-host"))
+        self.fProccessBackend.start(self.localPathToFile("mod-host"), ["-p", "5555", "-f", "5556", "-n"])
 
     @pyqtSlot()
     def slot_sdkStart(self):
@@ -193,17 +185,17 @@ class PanelWindow(QMainWindow):
             print("slot_sdkStart ignored")
             return
 
-        workspacedir = os.path.expanduser("~/mod-workspace")
+        #workspacedir = os.path.expanduser("~/mod-workspace")
 
-        if not os.path.exists(workspacedir):
-            os.mkdir(workspacedir)
+        #if not os.path.exists(workspacedir):
+            #os.mkdir(workspacedir)
 
         self.ui.text_sdk.clear()
         self.ui.l_sdk_status.setText(self.tr("Starting..."))
         self.ui.b_sdk_start.setEnabled(False)
         self.ui.b_sdk_stop.setEnabled(True)
 
-        self.fProccessSDK.start("modsdk")
+        self.fProccessSDK.start(self.localPathToFile("mod-sdk"))
 
     # --------------------------------------------------------------------------------------------------------
 
@@ -290,7 +282,7 @@ class PanelWindow(QMainWindow):
     @pyqtSlot()
     def slot_backendStartSuccess(self):
         self.ui.l_ui_status.setText(self.tr("Starting (2)"))
-        self.fProccessUI.start("mod-ui")
+        self.fProccessUI.start(self.localPathToFile("mod-ui"))
 
     @pyqtSlot()
     def slot_uiStartSuccess(self):
@@ -342,7 +334,8 @@ class PanelWindow(QMainWindow):
 
     def loadSettings(self):
         settings = QSettings()
-        self.restoreGeometry(settings.value("Geometry", ""))
+        if settings.contains("Geometry"):
+            self.restoreGeometry(settings.value("Geometry", ""))
 
     # --------------------------------------------------------------------------------------------------------
     # Qt events
@@ -372,14 +365,17 @@ class PanelWindow(QMainWindow):
 
     def timerEvent(self, event):
         if event.timerId() == self.fTimerId:
-            text = str(self.fProccessBackend.readAll().trimmed(), encoding="utf-8", errors="ignore")
-            if text: self.ui.text_backend.appendPlainText(text)
+            if self.fProccessBackend.state() != QProcess.NotRunning:
+                text = str(self.fProccessBackend.readAll().trimmed(), encoding="utf-8", errors="ignore")
+                if text: self.ui.text_backend.appendPlainText(text)
 
-            text = str(self.fProccessUI.readAll().trimmed(), encoding="utf-8", errors="ignore")
-            if text: self.ui.text_ui.appendPlainText(text)
+            if self.fProccessUI.state() != QProcess.NotRunning:
+                text = str(self.fProccessUI.readAll().trimmed(), encoding="utf-8", errors="ignore")
+                if text: self.ui.text_ui.appendPlainText(text)
 
-            text = str(self.fProccessSDK.readAll().trimmed(), encoding="utf-8", errors="ignore")
-            if text: self.ui.text_sdk.appendPlainText(text)
+            if self.fProccessSDK.state() != QProcess.NotRunning:
+                text = str(self.fProccessSDK.readAll().trimmed(), encoding="utf-8", errors="ignore")
+                if text: self.ui.text_sdk.appendPlainText(text)
 
         QMainWindow.timerEvent(self, event)
 
@@ -398,12 +394,19 @@ class PanelWindow(QMainWindow):
         return self.tr("Unkown error.")
 
     def openUrl(self, url):
-        if os.path.exists("/usr/bin/chromium-browser"):
-            os.system("/usr/bin/chromium-browser \"%s\" &" % url)
-        elif os.path.exists("/usr/bin/chromium") and not kIsUbuntu:
-            os.system("/usr/bin/chromium \"%s\" &" % url)
-        else:
-            QDesktopServices.openUrl(QUrl(url))
+        QDesktopServices.openUrl(QUrl(url))
+
+    def localPathToFile(self, module):
+        basepath = os.path.abspath(os.path.dirname(__file__))
+
+        if module == "mod-host":
+            return os.path.join(basepath, "mod-host", "mod-host")
+
+        if module == "mod-ui":
+            return os.path.join(basepath, "mod-ui", "server.py")
+
+        if module == "mod-sdk":
+            return os.path.join(basepath, "mod-sdk", "development_server.py")
 
     def stopBackendIfNeeded(self):
         if self.fProccessBackend.state() == QProcess.NotRunning:

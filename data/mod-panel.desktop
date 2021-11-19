@@ -1,7 +1,7 @@
 [Desktop Entry]
 Name=MOD-Panel
 GenericName=MOD Control Panel
-Comment=Control panel to start MOD UI and SDK services
+Comment=Control panel to start MOD Host + UI and SDK services
 Exec=mod-panel
 Icon=mod-panel
 Terminal=false
