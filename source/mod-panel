@@ -403,7 +403,7 @@ class PanelWindow(QMainWindow):
             return os.path.join(basepath, "mod-host", "mod-host")
 
         if module == "mod-ui":
-            return os.path.join(basepath, "mod-ui", "server.py")
+            return os.path.join(basepath, "mod-ui.sh")
 
         if module == "mod-sdk":
             return os.path.join(basepath, "mod-sdk", "development_server.py")

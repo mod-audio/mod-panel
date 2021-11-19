@@ -12,6 +12,9 @@ DESTDIR :=
 # ----------------------------------------------------------------------------------------------------------------------------
 # Set PyQt tools
 
+# TODO use shell to check for tool
+# TODO also check for virtualenv
+
 PYUIC5 ?= /usr/bin/pyuic5
 PYUIC6 ?= /usr/bin/pyuic6
 
