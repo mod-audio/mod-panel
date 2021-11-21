@@ -15,8 +15,8 @@ DESTDIR :=
 # TODO use shell to check for tool
 # TODO also check for virtualenv
 
-PYUIC5 ?= /usr/bin/pyuic5
-PYUIC6 ?= /usr/bin/pyuic6
+PYUIC5 ?= $(shell which pyuic5 2>/dev/null)
+PYUIC6 ?= $(shell which pyuic6 2>/dev/null)
 
 ifneq (,$(wildcard $(PYUIC5)))
 HAVE_PYQT=true
