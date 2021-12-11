@@ -19,16 +19,16 @@ Setup git submodules:
     git submodule update
 
 
-Run make:
+Build it with make:
 
     make
 
 
-Go into source/mod-sdk and follow the build/install instructions there.
+Now go into source/mod-sdk and follow the build/install instructions there.
 
 When this is successfull, you can run the panel with:
 
-   source/mod-panel
+    source/mod-panel
 
 
 Screenshot
