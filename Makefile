@@ -52,7 +52,7 @@ endif
 
 # ----------------------------------------------------------------------------------------------------------------------------
 
-all: RES UI host utils
+all: RES UI host ui_utils sdk_utils
 
 # ----------------------------------------------------------------------------------------------------------------------------
 # Resources
@@ -99,10 +99,18 @@ source/mod-host/mod-host: source/mod-host/src/*.c source/mod-host/src/*.h
 # ----------------------------------------------------------------------------------------------------------------------------
 # utils (from mod-ui submodule)
 
-utils: source/mod-ui/utils/libmod_utils.so
+ui_utils: source/mod-ui/utils/libmod_utils.so
 
 source/mod-ui/utils/libmod_utils.so: source/mod-ui/utils/*.cpp source/mod-ui/utils/*.h
 	$(MAKE) -C source/mod-ui/utils
+
+# ----------------------------------------------------------------------------------------------------------------------------
+# utils (from mod-sdk submodule)
+
+sdk_utils: source/mod-sdk/utils/libmod_utils.so
+
+source/mod-sdk/utils/libmod_utils.so: source/mod-sdk/utils/*.cpp source/mod-sdk/utils/*.h
+	$(MAKE) -C source/mod-sdk/utils
 
 # ----------------------------------------------------------------------------------------------------------------------------
 
@@ -111,6 +119,7 @@ clean:
 	rm -f *~ source/*~ source/*.pyc source/*_rc.py source/ui_*.py
 	$(MAKE) clean -C source/mod-host
 	$(MAKE) clean -C source/mod-ui/utils
+	$(MAKE) clean -C source/mod-sdk/utils
 
 # ----------------------------------------------------------------------------------------------------------------------------
 

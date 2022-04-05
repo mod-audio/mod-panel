@@ -2,14 +2,11 @@
 
 set -e
 
-cd $(dirname "${0}")/mod-ui
+cd $(dirname "${0}")/mod-sdk
 
-export MOD_DEV_ENVIRONMENT=0
-export MOD_LOG=1
-
+# TODO setup MOD_DEVICE_MODE
 # TODO setup MOD_DATA_DIR
 # TODO setup LV2_PATH
-# TODO setup MOD_LOG
 
 # if coming through PawPaw, reset PATH
 if [ -n "${OLD_PATH}" ]; then
@@ -22,11 +19,11 @@ if ! virtualenv --version 2>/dev/null; then
 fi
 
 # activate virtualenv
-virtualenv modui-env
-source modui-env/bin/activate
+virtualenv modsdk-env
+source modsdk-env/bin/activate
 
 # install required mod-ui dependencies in virtualenv
 pip3 install -r requirements.txt
 
-# start mod-ui inside virtualenv
-exec python3 ./server.py
+# start mod-sdk inside virtualenv
+exec python3 ./development_server.py
