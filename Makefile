@@ -123,7 +123,7 @@ clean:
 
 # ----------------------------------------------------------------------------------------------------------------------------
 
-install:
+not_install:
 	# Create directories
 	install -d $(DESTDIR)$(PREFIX)/bin/
 	install -d $(DESTDIR)$(PREFIX)/share/applications/
