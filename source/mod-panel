@@ -447,6 +447,15 @@ if __name__ == '__main__':
     setUpSignals()
 
     # --------------------------------------------------------------------------------------------------------
+    # Set-up workdir environment as LV2_PATH, if relevant
+
+    if os.getenv("LV2_PATH") is None:
+        WORKDIR = os.getenv("WORKDIR", os.path.expanduser("~/mod-workdir"))
+        LV2_PATH = os.path.join(WORKDIR, "x86_64", "plugins")
+        if os.path.exists(LV2_PATH):
+            os.environ["LV2_PATH"] = LV2_PATH
+
+    # --------------------------------------------------------------------------------------------------------
     # Create and show GUI
 
     gui = PanelWindow()
