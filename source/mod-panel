@@ -78,14 +78,17 @@ class PanelWindow(QMainWindow):
 
         self.fProccessBackend = QProcess(self)
         self.fProccessBackend.setProcessChannelMode(QProcess.MergedChannels)
+        self.fStartingBackend = False
         self.fStoppingBackend = False
 
         self.fProccessUI = QProcess(self)
         self.fProccessUI.setProcessChannelMode(QProcess.MergedChannels)
+        self.fStartingUI = False
         self.fStoppingUI = False
 
         self.fProccessSDK = QProcess(self)
         self.fProccessSDK.setProcessChannelMode(QProcess.MergedChannels)
+        self.fStartingSDK = False
         self.fStoppingSDK = False
 
         # ----------------------------------------------------------------------------------------------------
@@ -176,7 +179,7 @@ class PanelWindow(QMainWindow):
         self.ui.b_ui_start.setEnabled(False)
         self.ui.b_ui_stop.setEnabled(True)
 
-        print(self.localPathToFile("mod-host"))
+        self.fStartingBackend = True
         self.fProccessBackend.start(self.localPathToFile("mod-host"), ["-p", "5555", "-f", "5556", "-n"])
 
     @pyqtSlot()
@@ -195,6 +198,7 @@ class PanelWindow(QMainWindow):
         self.ui.b_sdk_start.setEnabled(False)
         self.ui.b_sdk_stop.setEnabled(True)
 
+        self.fStartingSDK = True
         self.fProccessSDK.start(self.localPathToFile("mod-sdk"))
 
     # --------------------------------------------------------------------------------------------------------
@@ -282,6 +286,7 @@ class PanelWindow(QMainWindow):
     @pyqtSlot()
     def slot_backendStartSuccess(self):
         self.ui.l_ui_status.setText(self.tr("Starting (2)"))
+        self.fStartingUI = True
         self.fProccessUI.start(self.localPathToFile("mod-ui"))
 
     @pyqtSlot()
@@ -365,17 +370,19 @@ class PanelWindow(QMainWindow):
 
     def timerEvent(self, event):
         if event.timerId() == self.fTimerId:
-            if self.fProccessBackend.state() != QProcess.NotRunning:
+            if self.fStartingBackend or self.fProccessBackend.state() != QProcess.NotRunning:
                 text = str(self.fProccessBackend.readAll().trimmed(), encoding="utf-8", errors="ignore")
                 if text: self.ui.text_backend.appendPlainText(text)
 
-            if self.fProccessUI.state() != QProcess.NotRunning:
+            if self.fStartingUI or self.fProccessUI.state() != QProcess.NotRunning:
                 text = str(self.fProccessUI.readAll().trimmed(), encoding="utf-8", errors="ignore")
                 if text: self.ui.text_ui.appendPlainText(text)
 
-            if self.fProccessSDK.state() != QProcess.NotRunning:
+            if self.fStartingSDK or self.fProccessSDK.state() != QProcess.NotRunning:
                 text = str(self.fProccessSDK.readAll().trimmed(), encoding="utf-8", errors="ignore")
                 if text: self.ui.text_sdk.appendPlainText(text)
+
+            self.fStartingBackend = self.fStartingUI = self.fStartingSDK = False
 
         QMainWindow.timerEvent(self, event)
 
