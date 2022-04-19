@@ -11,6 +11,8 @@ cd $(dirname "${0}")/mod-sdk
 # if coming through PawPaw, reset PATH
 if [ -n "${OLD_PATH}" ]; then
     export PATH="${OLD_PATH}"
+else
+    export PATH="~/.local/bin:${PATH}"
 fi
 
 # check for pip3 tool
@@ -30,6 +32,11 @@ source modsdk-env/bin/activate
 
 # install required mod-ui dependencies in virtualenv
 pip3 install -r requirements.txt
+
+# fix compatibility with python3.10
+if [ -e modsdk-env/lib/python3.10/site-packages/tornado/httputil.py ]; then
+    sed -i -e 's/collections.MutableMapping/collections.abc.MutableMapping/' modsdk-env/lib/python3.10/site-packages/tornado/httputil.py
+fi
 
 # start mod-sdk inside virtualenv
 exec python3 ./development_server.py
