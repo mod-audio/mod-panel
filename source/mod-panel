@@ -436,6 +436,8 @@ class PanelWindow(QMainWindow):
         self.fStoppingSDK = True
         self.fProccessSDK.terminate()
 
+    def setInformation(self, info):
+        self.ui.label_information.setText(info)
 # ------------------------------------------------------------------------------------------------------------
 # Main
 
@@ -456,11 +458,13 @@ if __name__ == '__main__':
     # --------------------------------------------------------------------------------------------------------
     # Set-up workdir environment as LV2_PATH, if relevant
 
-    if os.getenv("LV2_PATH") is None:
+    lv2_path = os.getenv("LV2_PATH")
+    if lv2_path is None:
         WORKDIR = os.getenv("WORKDIR", os.path.expanduser("~/mod-workdir"))
         LV2_PATH = os.path.join(WORKDIR, "x86_64", "plugins")
         if os.path.exists(LV2_PATH):
             os.environ["LV2_PATH"] = LV2_PATH
+            lv2_path = LV2_PATH
 
     # --------------------------------------------------------------------------------------------------------
     # Create and show GUI
@@ -468,6 +472,7 @@ if __name__ == '__main__':
     gui = PanelWindow()
     gui.show()
 
+    gui.setInformation("<b>LV2 path:</b><br/>" + "<br/>".join(lv2_path.split(":")))
     # --------------------------------------------------------------------------------------------------------
     # App-Loop
 
