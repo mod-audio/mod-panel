@@ -8,7 +8,7 @@ mod-panel is a simple control panel to start MOD Host + UI and SDK services.
 
 ## Usage
 
-Simply clone this repository recursively (either with `git clone --recursive` or `git submodule --init --update` afterwards), build and run it:
+Simply clone this repository recursively (either with `git clone --recursive` or `git submodule update --init --recursive` afterwards), build and run it:
 
 ```sh
 make
