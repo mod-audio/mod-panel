@@ -7,3 +7,6 @@
 [submodule "source/mod-sdk"]
 	path = source/mod-sdk
 	url = https://github.com/moddevices/mod-sdk.git
+[submodule "source/browsepy"]
+	path = source/browsepy
+	url = https://github.com/moddevices/browsepy.git

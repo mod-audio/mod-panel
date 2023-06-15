@@ -4,12 +4,16 @@ set -e
 
 cd $(dirname "${0}")/mod-ui
 
+# setup environment variables
+WORKDIR=${WORKDIR:=~/mod-workdir}
+
 export MOD_DEV_ENVIRONMENT=0
 export MOD_LOG=1
 
+export MOD_IMAGE_VERSION_PATH="${PWD}/../../data/release"
+export MOD_USER_FILES_DIR="${WORKDIR}/user-files"
+
 # TODO setup MOD_DATA_DIR
-# TODO setup LV2_PATH
-# TODO setup MOD_LOG
 
 # if coming through PawPaw, reset PATH
 if [ -n "${OLD_PATH}" ]; then
@@ -19,7 +23,7 @@ else
 fi
 
 # check for pip3 tool
-if ! which pip3 1>/dev/null 2>/dev/null; then
+if ! command -v pip3 >/dev/null; then
     echo "pip3 tool not available, cannot continue"
     exit 1
 fi

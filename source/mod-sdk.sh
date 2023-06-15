@@ -6,7 +6,6 @@ cd $(dirname "${0}")/mod-sdk
 
 # TODO setup MOD_DEVICE_MODE
 # TODO setup MOD_DATA_DIR
-# TODO setup LV2_PATH
 
 # if coming through PawPaw, reset PATH
 if [ -n "${OLD_PATH}" ]; then
@@ -16,7 +15,7 @@ else
 fi
 
 # check for pip3 tool
-if ! which pip3 1>/dev/null 2>/dev/null; then
+if ! command -v pip3 >/dev/null; then
     echo "pip3 tool not available, cannot continue"
     exit 1
 fi

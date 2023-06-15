@@ -12,7 +12,7 @@ Simply clone this repository recursively (either with `git clone --recursive` or
 
 ```sh
 make
-./source/mod-panel
+make run
 ```
 
 Afterwards simply click on "Start" for MOD Host + UI or SDK, and then its ">" button to open a browser on the predefined location.
