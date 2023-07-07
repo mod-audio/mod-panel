@@ -27,6 +27,12 @@ ALSA, JACK and LV2 (lilv) libraries are required, as well as PyQt5 for the UI.
 Python's `virtualenv` and `pip` is used to get the required versions of python libraries, as they cannot be too new or too old.
 (so Linux distribution packages are often not usable here)
 
+Under Debian-based distributions you can use the following command to install all dependencies:
+
+```sh
+sudo apt-get install jackd2 libasound2-dev libfftw3-dev libjack-jackd2-dev liblilv-dev libreadline-dev python3-virtualenv pyqt5-dev-tools
+```
+
 ## Notes
 
 - Installation via typical `make install` is not supported
