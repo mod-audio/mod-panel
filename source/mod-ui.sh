@@ -40,9 +40,11 @@ source modui-env/bin/activate
 # install required mod-ui dependencies in virtualenv
 pip3 install -r requirements.txt
 
-# fix compatibility with python3.10
+# fix compatibility with python3.10+
 if [ -e modui-env/lib/python3.10/site-packages/tornado/httputil.py ]; then
     sed -i -e 's/collections.MutableMapping/collections.abc.MutableMapping/' modui-env/lib/python3.10/site-packages/tornado/httputil.py
+elif [ -e modui-env/lib/python3.11/site-packages/tornado/httputil.py ]; then
+    sed -i -e 's/collections.MutableMapping/collections.abc.MutableMapping/' modui-env/lib/python3.11/site-packages/tornado/httputil.py
 fi
 
 # start mod-ui inside virtualenv
