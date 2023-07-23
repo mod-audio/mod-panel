@@ -81,6 +81,11 @@ class PanelWindow(QMainWindow):
         self.fStartingBackend = False
         self.fStoppingBackend = False
 
+        self.fProccessFileBrowser = QProcess(self)
+        self.fProccessFileBrowser.setProcessChannelMode(QProcess.MergedChannels)
+        self.fStartingFileBrowser = False
+        self.fStoppingFileBrowser = False
+
         self.fProccessUI = QProcess(self)
         self.fProccessUI.setProcessChannelMode(QProcess.MergedChannels)
         self.fStartingUI = False
@@ -141,6 +146,10 @@ class PanelWindow(QMainWindow):
         self.fProccessBackend.error.connect(self.slot_backendStartError)
         self.fProccessBackend.started.connect(self.slot_backendStartSuccess)
         self.fProccessBackend.finished.connect(self.slot_backendFinished)
+
+        self.fProccessFileBrowser.error.connect(self.slot_fileBrowserStartError)
+        self.fProccessFileBrowser.started.connect(self.slot_fileBrowserStartSuccess)
+        self.fProccessFileBrowser.finished.connect(self.slot_fileBrowserFinished)
 
         self.fProccessUI.error.connect(self.slot_uiStartError)
         self.fProccessUI.started.connect(self.slot_uiStartSuccess)
@@ -208,6 +217,7 @@ class PanelWindow(QMainWindow):
         if self.fProccessUI.state() == QProcess.NotRunning:
             print("slot_uiStop ignored")
             self.stopBackendIfNeeded()
+            self.stopFileBrowserIfNeeded()
             return
 
         self.ui.l_ui_status.setText(self.tr("Stopping..."))
@@ -242,6 +252,7 @@ class PanelWindow(QMainWindow):
 
     @pyqtSlot(QProcess.ProcessError)
     def slot_backendStartError(self, error):
+        self.stopFileBrowserIfNeeded()
         self.stopUIIfNeeded()
 
         # crashed while stopping, ignore
@@ -258,8 +269,27 @@ class PanelWindow(QMainWindow):
         QMessageBox.critical(self, self.tr("Error"), errorStr)
 
     @pyqtSlot(QProcess.ProcessError)
+    def slot_fileBrowserStartError(self, error):
+        self.stopBackendIfNeeded()
+        self.stopUIIfNeeded()
+
+        # crashed while stopping, ignore
+        if error == QProcess.Crashed and self.fStoppingFileBrowser:
+            return
+
+        if self.fProccessUI.state() != QProcess.NotRunning:
+            self.fStoppingUI = True
+            self.fProccessUI.terminate()
+
+        errorStr = self.tr("Could not start MOD UI backend.\n") + self.getProcessErrorAsString(error)
+
+        # show the error message
+        QMessageBox.critical(self, self.tr("Error"), errorStr)
+
+    @pyqtSlot(QProcess.ProcessError)
     def slot_uiStartError(self, error):
         self.stopBackendIfNeeded()
+        self.stopFileBrowserIfNeeded()
 
         # crashed while stopping, ignore
         if error == QProcess.Crashed and self.fStoppingUI:
@@ -286,6 +316,12 @@ class PanelWindow(QMainWindow):
     @pyqtSlot()
     def slot_backendStartSuccess(self):
         self.ui.l_ui_status.setText(self.tr("Starting (2)"))
+        self.fStartingFileBrowser = True
+        self.fProccessFileBrowser.start(self.localPathToFile("browsepy"))
+
+    @pyqtSlot()
+    def slot_fileBrowserStartSuccess(self):
+        self.ui.l_ui_status.setText(self.tr("Starting (3)"))
         self.fStartingUI = True
         self.fProccessUI.start(self.localPathToFile("mod-ui"))
 
@@ -314,6 +350,19 @@ class PanelWindow(QMainWindow):
         self.ui.b_ui_stop.setEnabled(False)
         self.ui.tb_ui.setEnabled(False)
 
+        self.stopFileBrowserIfNeeded()
+        self.stopUIIfNeeded()
+
+    @pyqtSlot(int, QProcess.ExitStatus)
+    def slot_fileBrowserFinished(self, exitCode, exitStatus):
+        self.fStoppingFileBrowser = False
+
+        self.ui.l_ui_status.setText(self.tr("Stopped"))
+        self.ui.b_ui_start.setEnabled(True)
+        self.ui.b_ui_stop.setEnabled(False)
+        self.ui.tb_ui.setEnabled(False)
+
+        self.stopBackendIfNeeded()
         self.stopUIIfNeeded()
 
     @pyqtSlot(int, QProcess.ExitStatus)
@@ -321,6 +370,7 @@ class PanelWindow(QMainWindow):
         self.fStoppingUI = False
 
         self.stopBackendIfNeeded()
+        self.stopFileBrowserIfNeeded()
 
     @pyqtSlot(int, QProcess.ExitStatus)
     def slot_sdkFinished(self, exitCode, exitStatus):
@@ -374,6 +424,10 @@ class PanelWindow(QMainWindow):
                 text = str(self.fProccessBackend.readAll().trimmed(), encoding="utf-8", errors="ignore")
                 if text: self.ui.text_backend.appendPlainText(text)
 
+            if self.fStartingFileBrowser or self.fProccessFileBrowser.state() != QProcess.NotRunning:
+                text = str(self.fProccessFileBrowser.readAll().trimmed(), encoding="utf-8", errors="ignore")
+                if text: self.ui.text_filebrowser.appendPlainText(text)
+
             if self.fStartingUI or self.fProccessUI.state() != QProcess.NotRunning:
                 text = str(self.fProccessUI.readAll().trimmed(), encoding="utf-8", errors="ignore")
                 if text: self.ui.text_ui.appendPlainText(text)
@@ -382,7 +436,7 @@ class PanelWindow(QMainWindow):
                 text = str(self.fProccessSDK.readAll().trimmed(), encoding="utf-8", errors="ignore")
                 if text: self.ui.text_sdk.appendPlainText(text)
 
-            self.fStartingBackend = self.fStartingUI = self.fStartingSDK = False
+            self.fStartingBackend = self.fStartingFileBrowser = self.fStartingUI = self.fStartingSDK = False
 
         QMainWindow.timerEvent(self, event)
 
@@ -406,6 +460,9 @@ class PanelWindow(QMainWindow):
     def localPathToFile(self, module):
         basepath = os.path.abspath(os.path.dirname(__file__))
 
+        if module == "browsepy":
+            return os.path.join(basepath, "browsepy.sh")
+
         if module == "mod-host":
             return os.path.join(basepath, "mod-host", "mod-host")
 
@@ -421,6 +478,13 @@ class PanelWindow(QMainWindow):
 
         self.fStoppingBackend = True
         self.fProccessBackend.terminate()
+
+    def stopFileBrowserIfNeeded(self):
+        if self.fProccessFileBrowser.state() == QProcess.NotRunning:
+            return
+
+        self.fStoppingFileBrowser = True
+        self.fProccessFileBrowser.terminate()
 
     def stopUIIfNeeded(self):
         if self.fProccessUI.state() == QProcess.NotRunning:
