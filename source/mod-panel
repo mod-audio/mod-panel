@@ -521,8 +521,16 @@ if __name__ == '__main__':
     # Set-up workdir environment as LV2_PATH, if relevant
 
     if os.getenv("LV2_PATH") is None:
+        machine = os.uname().machine
+        if machine == "arm":
+            PLAT = "modduo-new"
+        elif machine in ("aarch64", "arm64"):
+            PLAT = "modduox-new"
+        else:
+            PLAT = "x86_64"
+
         WORKDIR = os.getenv("WORKDIR", os.path.expanduser("~/mod-workdir"))
-        LV2_PATH = os.path.join(WORKDIR, "x86_64", "plugins")
+        LV2_PATH = os.path.join(WORKDIR, PLAT, "plugins")
         if os.path.exists(LV2_PATH):
             os.environ["LV2_PATH"] = LV2_PATH
 
