@@ -397,6 +397,12 @@ class PanelWindow(QMainWindow):
     def closeEvent(self, event):
         self.saveSettings()
 
+        if self.fProccessFileBrowser.state() != QProcess.NotRunning:
+            self.fStoppingFileBrowser = True
+            self.fProccessFileBrowser.terminate()
+            if not self.fProccessFileBrowser.waitForFinished(500):
+                self.fProccessFileBrowser.kill()
+
         if self.fProccessSDK.state() != QProcess.NotRunning:
             self.fStoppingSDK = True
             self.fProccessSDK.terminate()
