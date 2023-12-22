@@ -214,17 +214,16 @@ class PanelWindow(QMainWindow):
 
     @pyqtSlot()
     def slot_uiStop(self):
-        if self.fProccessUI.state() == QProcess.NotRunning:
-            print("slot_uiStop ignored")
-            self.stopBackendIfNeeded()
-            self.stopFileBrowserIfNeeded()
-            return
-
         self.ui.l_ui_status.setText(self.tr("Stopping..."))
         self.ui.b_ui_stop.setEnabled(False)
+        self.ui.tb_ui.setEnabled(False)
 
-        self.fStoppingUI = True
-        self.fProccessUI.terminate()
+        if self.fProccessUI.state() != QProcess.NotRunning:
+            self.fStoppingUI = True
+            self.fProccessUI.terminate()
+        else:
+            self.stopBackendIfNeeded()
+            self.stopFileBrowserIfNeeded()
 
     @pyqtSlot()
     def slot_sdkStop(self):
