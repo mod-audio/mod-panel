@@ -45,6 +45,9 @@ if [ -e modui-env/lib/python3.10/site-packages/tornado/httputil.py ]; then
     sed -i -e 's/collections.MutableMapping/collections.abc.MutableMapping/' modui-env/lib/python3.10/site-packages/tornado/httputil.py
 elif [ -e modui-env/lib/python3.11/site-packages/tornado/httputil.py ]; then
     sed -i -e 's/collections.MutableMapping/collections.abc.MutableMapping/' modui-env/lib/python3.11/site-packages/tornado/httputil.py
+elif [ -e modui-env/lib/python3.12/site-packages/tornado/httputil.py ]; then
+    sed -i -e 's/collections.MutableMapping/collections.abc.MutableMapping/' modui-env/lib/python3.12/site-packages/tornado/httputil.py
+    sed -i -e 's/import ssl/import _NOT_ssl/' modui-env/lib/python3.12/site-packages/tornado/netutil.py
 fi
 
 # start mod-ui inside virtualenv
